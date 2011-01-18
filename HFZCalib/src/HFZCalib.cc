@@ -13,7 +13,7 @@
 //
 // Original Author:  Perrie Cole
 //         Created:  Wed Jun 17 15:21:36 CDT 2009
-// $Id: HFZCalib.cc,v 1.2 2009/06/22 18:59:11 plcole Exp $
+// $Id: HFZCalib.cc,v 1.1 2010/10/19 19:39:29 mansj Exp $
 //
 //
 
@@ -116,9 +116,8 @@ void HFZCalib::loadFromHF(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByLabel(hfHits_,hits);
   
   theAnalysis.loadFromHF(*HFElectrons,*SuperClusters,*ClusterAssociation,*hits);
-  //std::cout << "I've got " << HFElectrons->size() << " reco::Electrons!  How about you?\n" 
+  //std::cout << "I've got " << HFElectrons->size() << " reco::Electrons!  How about you?\n" ;
 
-  std::cout << HFElectrons->size() << " reco::Electrons!  How about you?\n";
 }
 
 bool
@@ -127,10 +126,9 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    using namespace edm;
 
    Handle<pat::ElectronCollection> patElectrons;
-   iEvent.getByLabel("selectedPatElectrons",patElectrons);
+   iEvent.getByLabel(selectedPatElectrons_,patElectrons);
    
    // std::cout << "I've got " << patElectrons->size() << " pat::Electrons!  How about you?\n";  
- std::cout << patElectrons->size() << " pat::Electrons!  How about you?\n";
 
    loadFromHF(iEvent,iSetup);
 
