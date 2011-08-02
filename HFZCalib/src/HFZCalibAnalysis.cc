@@ -447,4 +447,5 @@ void HFZCalibAnalysis::CalibrationObjects::fill(double Ac, double Ao, double Af,
   bvector[index]->Fill(forward,E*Af);
   bvector[index]->Fill(of,E*Ao);
   bvector[index]->Fill(central,E*Ac);
-} 
+}
+
