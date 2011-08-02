@@ -11,18 +11,22 @@ using namespace reco;
 
 // This is my  Analyzer
 
-void HFZCalibAnalysis::setup()
-
+void HFZCalibAnalysis::setup(bool doMC)
 {
+  m_doMC=doMC;
+
   
   edm::Service<TFileService> fs;
   m_canHFEnergy.book(*fs,"recoHFieta%+dEnergy","Reco HF Energy",100,0,2000);  
   m_expHFEnergy.book(*fs,"predHFieta%+dEnergy","Predicted HF Energy",100,0,2000);
   m_delExpCanHFEnergy.book(*fs,"delExpCanHF%dEnergy","Reco/Pred HF Energy",500,0,5);
-  m_genHFEnergy.book(*fs,"genHFieta%+dEnergy","Gen HF Energy",100,0,2000);
-  m_delExpGenHFEnergy.book(*fs,"delExpGenHF%dEnergy","Gen/Pred HF Energy",500,0,5);
-  m_delExpCanHFEnergyECALTruth.book(*fs,"delExpCanHF%dEnergyECALTruth","Reco/Pred HF Energy w/ ECAL truth",500,0,5);
-  m_delExpCanHFEnergyHFTruth.book(*fs,"delExpCanHF%dEnergyHFTruth","Reco/Pred HF Energy w/ HF Truth",500,0,5);
+  if (doMC) {
+    m_genHFEnergy.book(*fs,"genHFieta%+dEnergy","Gen HF Energy",100,0,2000);
+    m_delExpGenHFEnergy.book(*fs,"delExpGenHF%dEnergy","Gen/Pred HF Energy",500,0,5);
+    m_delExpCanHFEnergyECALTruth.book(*fs,"delExpCanHF%dEnergyECALTruth","Reco/Pred HF Energy w/ ECAL truth",500,0,5);
+    m_delExpCanHFEnergyHFTruth.book(*fs,"delExpCanHF%dEnergyHFTruth","Reco/Pred HF Energy w/ HF Truth",500,0,5);
+  }
+
   m_ringOf_t.book(*fs,"ringOf_t%d","ringOf Et",100,0,100);
   m_ringCentral_t.book(*fs,"ringCentral_t%d","ringCentral Et",100,0,100);
   m_ringForward_t.book(*fs,"ringForward_t%d","ringForward Et",100,0,100);
@@ -161,10 +165,12 @@ void HFZCalibAnalysis::analyze(const pat::ElectronCollection& elecs) {
     m_canHFEnergy.fill(theHF.cluster_p4.e(),theHF.clus_seed);
     m_expHFEnergy.fill(HFelEcan,theHF.clus_seed);
     m_delExpCanHFEnergy.fill(theHF.cluster_p4.e()/HFelEcan,theHF.clus_seed);
-    m_genHFEnergy.fill(theHF.gen_p4.e(),theHF.clus_seed);
-    m_delExpGenHFEnergy.fill(theHF.gen_p4.e()/HFelEcan,theHF.clus_seed);
-    m_delExpCanHFEnergyECALTruth.fill(theHF.cluster_p4.e()/HFelEgenECALTruth,theHF.clus_seed);
-    m_delExpCanHFEnergyHFTruth.fill(theHF.cluster_p4.e()/HFelEgenHFTruth,theHF.clus_seed);
+    if (m_doMC) {
+      m_genHFEnergy.fill(theHF.gen_p4.e(),theHF.clus_seed);
+      m_delExpGenHFEnergy.fill(theHF.gen_p4.e()/HFelEcan,theHF.clus_seed);
+      m_delExpCanHFEnergyECALTruth.fill(theHF.cluster_p4.e()/HFelEgenECALTruth,theHF.clus_seed);
+      m_delExpCanHFEnergyHFTruth.fill(theHF.cluster_p4.e()/HFelEgenHFTruth,theHF.clus_seed);
+    }
     m_ringOf_t.fill(theHF.ringOf_t,theHF.clus_seed);
     m_ringCentral_t.fill(theHF.ringCentral_t,theHF.clus_seed);
     m_ringForward_t.fill(theHF.ringForward_t,theHF.clus_seed);

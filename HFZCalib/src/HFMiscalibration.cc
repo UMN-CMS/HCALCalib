@@ -104,7 +104,7 @@ void HFZRecHitMiscalib::produce(edm::Event& iEvent, const edm::EventSetup& iSetu
 
      ietascale = scaleFactor(misHF->id().ieta(),scenario_);
 
-     std::cout << " The new scale of energy is:" << ietascale << std::endl;
+     //  std::cout << " The new scale of energy is:" << ietascale << std::endl;
     
      HFRecHit aHit(misHF->id(),misHF->energy()*ietascale,misHF->time()); // this is where the Miscallibration factors  affect the energy distrubution directly.
     MiscalibHFRecHitCollection->push_back( aHit );
