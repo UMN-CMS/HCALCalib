@@ -14,7 +14,7 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 #process.load("PhysicsTools.PatAlgos.patSequences_cff")
 
 ## global tag for data
-process.GlobalTag.globaltag = 'START38_V7::All' ## needed for CMSSW_3_8_0 due to changes in the DB access for JEC ## process.GlobalTag.globaltag = cms.string('GR_R_35X_V8B::All')
+process.GlobalTag.globaltag = 'GR_R_42_V12::All' ## needed for CMSSW_3_8_0 due to changes in the DB access for JEC ## process.GlobalTag.globaltag = cms.string('GR_R_35X_V8B::All')
 
 
 #from PhysicsTools.PatAlgos.tools.metTools import *
@@ -25,7 +25,7 @@ process.GlobalTag.globaltag = 'START38_V7::All' ## needed for CMSSW_3_8_0 due to
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(110000) )
 
 process.source = cms.Source("PoolSource",
-                            eventsToProcess = cms.untracked.VEventRange('1:1-148655:max'),
+#                            eventsToProcess = cms.untracked.VEventRange('1:1-148655:max'),
                             fileNames = cms.untracked.vstring(         )
                             )
 
@@ -33,7 +33,7 @@ process.es_ascii = cms.ESSource("HcalTextCalibrations",
                         input = cms.VPSet(
         cms.PSet(
             object = cms.string('RespCorrs'),
-            file = cms.FileInPath('Work/HFRescaler/data/testCombined_period1_v2.txt')
+            file = cms.FileInPath('Work/HFRescaler/data/corrHFfactors2011.txt')
             )
         )
                         )
@@ -46,7 +46,7 @@ process.hfrecalib=cms.EDProducer('HFRescaler',
 process.load("RecoEgamma.EgammaHFProducers.hfEMClusteringSequence_cff")
 
 process.hfEMClusters.hits=cms.InputTag("hfrecalib")
-process.hfRecoEcalCandidate.intercept2DCut=0.35
+process.hfRecoEcalCandidate.intercept2DCut=0.42
 
 process.calib = cms.EDFilter('HFZCalib',
                              hfClusterShapes = cms.untracked.InputTag("hfEMClusters"),

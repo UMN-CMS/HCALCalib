@@ -17,10 +17,18 @@ void HFZCalibAnalysis::setup(bool doMC)
 
   
   edm::Service<TFileService> fs;
+
+
+
   m_canHFEnergy.book(*fs,"recoHFieta%+dEnergy","Reco HF Energy",100,0,2000);  
   m_expHFEnergy.book(*fs,"predHFieta%+dEnergy","Predicted HF Energy",100,0,2000);
   m_delExpCanHFEnergy.book(*fs,"delExpCanHF%dEnergy","Reco/Pred HF Energy",500,0,5);
+
+  m_nPU=fs->make<TH1F>("NPU","Number of Pileup Events (all)",100,-0.5,99.5);
+  m_nPUu=fs->make<TH1F>("NPUu","Number of Pileup Events (used events)",100,-0.5,99.5);
+
   if (doMC) {
+
     m_genHFEnergy.book(*fs,"genHFieta%+dEnergy","Gen HF Energy",100,0,2000);
     m_delExpGenHFEnergy.book(*fs,"delExpGenHF%dEnergy","Gen/Pred HF Energy",500,0,5);
     m_delExpCanHFEnergyECALTruth.book(*fs,"delExpCanHF%dEnergyECALTruth","Reco/Pred HF Energy w/ ECAL truth",500,0,5);
@@ -439,4 +447,4 @@ void HFZCalibAnalysis::CalibrationObjects::fill(double Ac, double Ao, double Af,
   bvector[index]->Fill(forward,E*Af);
   bvector[index]->Fill(of,E*Ao);
   bvector[index]->Fill(central,E*Ac);
-}
+} 
