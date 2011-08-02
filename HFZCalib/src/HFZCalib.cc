@@ -13,7 +13,7 @@
 //
 // Original Author:  Perrie Cole
 //         Created:  Wed Jun 17 15:21:36 CDT 2009
-// $Id: HFZCalib.cc,v 1.1 2010/10/19 19:39:29 mansj Exp $
+// $Id: HFZCalib.cc,v 1.2 2011/01/18 02:44:14 mansj Exp $
 //
 //
 
@@ -39,6 +39,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include <iostream>
 #include <vector>
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
 
 //
 // class decleration
@@ -53,12 +55,15 @@ class HFZCalib : public edm::EDFilter {
 
    private:
       virtual void beginJob() ;
-      virtual bool filter(edm::Event&, const edm::EventSetup&);
+  virtual bool filter(edm::Event&, const edm::EventSetup&);
       virtual void loadFromHF(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
 
   std::string selectedPatElectrons_;
   edm::InputTag hfRecoEcalCandidate_,hfClusterShapes_,hfHits_;
+  bool doMC_;
+  int nvertexCut_;
+
       // ----------member data ---------------------------
   HFZCalibAnalysis theAnalysis;
 };
@@ -78,10 +83,12 @@ HFZCalib::HFZCalib(const edm::ParameterSet& iConfig) :
   selectedPatElectrons_(iConfig.getUntrackedParameter<std::string>("selectedPatElectrons")),
   hfRecoEcalCandidate_(iConfig.getUntrackedParameter<edm::InputTag>("hfRecoEcalCandidate")),
   hfClusterShapes_(iConfig.getUntrackedParameter<edm::InputTag>("hfClusterShapes")),
-  hfHits_(iConfig.getUntrackedParameter<edm::InputTag>("hfHits"))
+  hfHits_(iConfig.getUntrackedParameter<edm::InputTag>("hfHits")),
+  doMC_(iConfig.getUntrackedParameter<bool>("doMC",false))
 
 {
    //now do what ever initialization is needed
+  nvertexCut_ = iConfig.getParameter<int>("nvertexCut");
 
 
 }
@@ -130,9 +137,28 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    
    // std::cout << "I've got " << patElectrons->size() << " pat::Electrons!  How about you?\n";  
 
+   Handle<reco::VertexCollection> pvHandle;
+   iEvent.getByLabel("offlinePrimaryVertices", pvHandle);
+   const reco::VertexCollection & vertices = *pvHandle.product();
+   static const int minNDOF = 4;
+   static const double maxAbsZ = 15.0;
+   static const double maxd0 = 2.0;
+   
+   //count verticies
+   int nvertex = 0;
+   for(reco::VertexCollection::const_iterator vit = vertices.begin(); vit != vertices.end(); ++vit)
+     {
+       if(vit->ndof() > minNDOF && ((maxAbsZ <= 0) || fabs(vit->z()) <= maxAbsZ) && ((maxd0 <= 0) || fabs(vit->position().rho()) <= maxd0)) nvertex++;
+     }
+
    loadFromHF(iEvent,iSetup);
 
-   if (!iEvent.eventAuxiliary().isRealData()) {
+   //Cut on number of vertices
+   if (nvertex != nvertexCut_ && nvertexCut_ != -1){ // -1 disables the vertex cut. //nvertex != 0){
+     return false;
+   }
+
+   if (!iEvent.eventAuxiliary().isRealData() && doMC_) {
 
      Handle<HepMCProduct> hepMCEvt;
      iEvent.getByLabel("generator",hepMCEvt);
@@ -153,7 +179,7 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 HFZCalib::beginJob()
 {
-  theAnalysis.setup();
+  theAnalysis.setup(doMC_);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
