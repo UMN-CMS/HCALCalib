@@ -1,3 +1,5 @@
+nvertex = 12
+
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("Calib1")
@@ -16,7 +18,8 @@ process.calib = cms.EDFilter('HFZCalib',
                              hfClusterShapes = cms.untracked.InputTag("hfEMClusters"),
                              hfRecoEcalCandidate = cms.untracked.InputTag("hfRecoEcalCandidate"),
                              hfHits = cms.untracked.InputTag("hfreco"),
-                             selectedPatElectrons = cms.untracked.string('patElectrons')
+                             selectedPatElectrons = cms.untracked.string('patElectrons'),
+                             nvertexCut = cms.int32(nvertex)
 )
 
 process.TFileService = cms.Service("TFileService",
