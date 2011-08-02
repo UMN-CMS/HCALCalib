@@ -34,7 +34,11 @@ class HFZCalibAnalysis {
   void analyze(const pat::ElectronCollection& elecs
 	       /*,
 	       const HepMC::GenEvent& genE */);
-  void setup();
+  void fillPU(int npu, bool ok) {
+    m_nPU->Fill(npu*1.0);
+    if (ok) m_nPUu->Fill(npu*1.0);
+  }
+  void setup(bool doMC);
  private:
   struct HFCalibData {
     CLHEP::HepLorentzVector cluster_p4;
@@ -53,6 +57,7 @@ class HFZCalibAnalysis {
   bool ecal_gen_valid;//if Ecal generated is valid?
   bool gen_is_EcalHF;// if generated is ECalHF
   bool wasUseful_;  // return wasteful if lectron was usless for analysis.
+  bool m_doMC;
 
   std::vector<HFCalibData> m_calibs;
   TFile* m_file; //Histogram file
@@ -82,6 +87,7 @@ class HFZCalibAnalysis {
   };
 
   OneDPlot m_numberOfEvents, m_NumOfZ, m_NumOfZOneECALOneHF, m_NumOfZECALId, m_NumOfZHFId, m_NumOfZPassZCut;// in this plot we are plotting number of Events, Number of Zs, Number of Z in Ecal and HF, The numnber of Z in Ecal id, Number of  Z in HFid, Number of Z which actually pass the Cut.
+  TH1* m_nPU, *m_nPUu;
 
   PlotPerRing m_canHFEnergy, m_expHFEnergy, m_delExpCanHFEnergy, m_genHFEnergy, m_delExpGenHFEnergy, m_delExpCanHFEnergyECALTruth, m_delExpCanHFEnergyHFTruth, m_ringOf_t, m_ringCentral_t, m_ringForward_t, m_ringRatio_t, m_delCanRingHFEnergy, m_diElectronMassRing, m_invariantMassZ;
 
