@@ -8,14 +8,20 @@
 
 using namespace reco;
 
+HFZCalibAnalysis::HFZCalibAnalysis() {
+  minimum_ET_HF_=12.0;
+  m_doMC=false;
+  m_doHits=false;
+}
 
 // This is my  Analyzer
 
-void HFZCalibAnalysis::setup(bool doMC)
+void HFZCalibAnalysis::setup(bool doMC, bool doHits, double minHFET)
 {
   m_doMC=doMC;
+  m_doHits=doHits;
+  minimum_ET_HF_=minHFET;
 
-  
   edm::Service<TFileService> fs;
 
 
@@ -35,11 +41,22 @@ void HFZCalibAnalysis::setup(bool doMC)
     m_delExpCanHFEnergyHFTruth.book(*fs,"delExpCanHF%dEnergyHFTruth","Reco/Pred HF Energy w/ HF Truth",500,0,5);
   }
 
-  m_ringOf_t.book(*fs,"ringOf_t%d","ringOf Et",100,0,100);
-  m_ringCentral_t.book(*fs,"ringCentral_t%d","ringCentral Et",100,0,100);
-  m_ringForward_t.book(*fs,"ringForward_t%d","ringForward Et",100,0,100);
-  m_ringRatio_t.book(*fs,"ringRatio_t%d","Ratio of RingOf Et to the sum of Ets",100,0,5);
-  m_diElectronMassRing.book(*fs,"diElectronMassRing%d","dielectron mass",100,0,200);
+  if (doHits) {
+  
+    m_ringOf_t.book(*fs,"ringOf_t%d","ringOf Et",100,0,100);
+    m_ringCentral_t.book(*fs,"ringCentral_t%d","ringCentral Et",100,0,100);
+    m_ringForward_t.book(*fs,"ringForward_t%d","ringForward Et",100,0,100);
+    m_ringRatio_t.book(*fs,"ringRatio_t%d","Ratio of RingOf Et to the sum of Ets",100,0,5);
+
+    m_calibObjects.book(*fs,"Standard","Standard calibration objects");
+    m_calibObjectsW.book(*fs,"Weighted","Weighted (reco-like) calibration objects");
+
+    m_delCanRingHFEnergy.book(*fs,"delCanRingHFieta%dEnergy","Reco/Sum of Ring Energies",500,0,5);
+    
+    m_diElectronMassRing.book(*fs,"diElectronMassRing%d","dielectron mass",100,0,200);
+
+  }
+
   m_invariantMassZ.book(*fs,"invariantMass%d","Invariant Mass of Z",100,0,200);
   m_numberOfEvents.book(*fs,"numberOfEvents","Number of Events",100,0,1000000);
   m_NumOfZ.book(*fs,"NumOfZ","Number Of Z Events",10,-0.5,9.5);
@@ -50,10 +67,6 @@ void HFZCalibAnalysis::setup(bool doMC)
 
   m_shortLongRatio.book(*fs,"ShortLongRatio%d","Short/Long Energy Ratio",120,0.0,1.2);
   
-  m_delCanRingHFEnergy.book(*fs,"delCanRingHFieta%dEnergy","Reco/Sum of Ring Energies",500,0,5);
-
-  m_calibObjects.book(*fs,"Standard","Standard calibration objects");
-  m_calibObjectsW.book(*fs,"Weighted","Weighted (reco-like) calibration objects");
 
   ecal_gen_valid=false;
 
@@ -153,52 +166,44 @@ void HFZCalibAnalysis::analyze(const pat::ElectronCollection& elecs) {
     }
   m_NumOfZPassZCut.fill(NumOfZPassZCut);
   
-  /*double HighCut, LowCut;
-    std::cout << "Please enter high cut, then low cut values for the Reco/Pred graph" << std::endl;
-    std::cin >> HighCut >> LowCut;
-    std::cout << "High Cut is: " << HighCut << " Low Cut is: " << LowCut << std::endl;*/
-  
-  if (65 < InvariantMassZ && InvariantMassZ < 110){
-    
-    double scaleCutRatio=theHF.cluster_p4.e()/std::max(0.0001,HFelEcan);
-    
-    if (0.2 < scaleCutRatio && scaleCutRatio < 2) 
+  if (m_doHits) {
+    if (65 < InvariantMassZ && InvariantMassZ < 110){
       
-      {
+      double scaleCutRatio=theHF.cluster_p4.e()/std::max(0.0001,HFelEcan);
+      
+      if (0.2 < scaleCutRatio && scaleCutRatio < 2) 
 	
-	m_calibObjects.fill(theHF.ringCentral,theHF.ringOf,theHF.ringForward,HFelEcan,theHF.clus_seed);
-	m_calibObjectsW.fill(theHF.ringCentral*m_recoFactor,theHF.ringOf*m_recoFactor,theHF.ringForward*m_recoFactor,HFelEcan,theHF.clus_seed);
-      }
-    
-    m_canHFEnergy.fill(theHF.cluster_p4.e(),theHF.clus_seed);
-    m_expHFEnergy.fill(HFelEcan,theHF.clus_seed);
-    m_delExpCanHFEnergy.fill(theHF.cluster_p4.e()/HFelEcan,theHF.clus_seed);
-    if (m_doMC) {
-      m_genHFEnergy.fill(theHF.gen_p4.e(),theHF.clus_seed);
-      m_delExpGenHFEnergy.fill(theHF.gen_p4.e()/HFelEcan,theHF.clus_seed);
-      m_delExpCanHFEnergyECALTruth.fill(theHF.cluster_p4.e()/HFelEgenECALTruth,theHF.clus_seed);
-      m_delExpCanHFEnergyHFTruth.fill(theHF.cluster_p4.e()/HFelEgenHFTruth,theHF.clus_seed);
+	{
+	  
+	  m_calibObjects.fill(theHF.ringCentral,theHF.ringOf,theHF.ringForward,HFelEcan,theHF.clus_seed);
+	  m_calibObjectsW.fill(theHF.ringCentral*m_recoFactor,theHF.ringOf*m_recoFactor,theHF.ringForward*m_recoFactor,HFelEcan,theHF.clus_seed);
+	}
     }
+  }
+  m_canHFEnergy.fill(theHF.cluster_p4.e(),theHF.clus_seed);
+  m_expHFEnergy.fill(HFelEcan,theHF.clus_seed);
+  m_delExpCanHFEnergy.fill(theHF.cluster_p4.e()/HFelEcan,theHF.clus_seed);
+  if (m_doMC) {
+    m_genHFEnergy.fill(theHF.gen_p4.e(),theHF.clus_seed);
+    m_delExpGenHFEnergy.fill(theHF.gen_p4.e()/HFelEcan,theHF.clus_seed);
+    m_delExpCanHFEnergyECALTruth.fill(theHF.cluster_p4.e()/HFelEgenECALTruth,theHF.clus_seed);
+    m_delExpCanHFEnergyHFTruth.fill(theHF.cluster_p4.e()/HFelEgenHFTruth,theHF.clus_seed);
+  }
+  if (m_doHits) {
     m_ringOf_t.fill(theHF.ringOf_t,theHF.clus_seed);
     m_ringCentral_t.fill(theHF.ringCentral_t,theHF.clus_seed);
     m_ringForward_t.fill(theHF.ringForward_t,theHF.clus_seed);
     m_ringRatio_t.fill(theHF.ringOf_t/std::max(0.0001,theHF.ringOf_t+theHF.ringCentral_t+theHF.ringForward_t),theHF.clus_seed);
     m_delCanRingHFEnergy.fill(theHF.cluster_p4.e()/std::max(0.0001,theHF.ringOf*m_recoFactor+theHF.ringCentral*m_recoFactor+theHF.ringForward*m_recoFactor),theHF.clus_seed);
-
-    double sum_long=theHF.ringOf+theHF.ringCentral+theHF.ringForward;
-    double sum_short=theHF.ringOf_short+theHF.ringCentral_short+theHF.ringForward_short;
-
-    m_shortLongRatio.fill(sum_short/sum_long,theHF.clus_seed);
-
+    m_diElectronMassRing.fill(diElectronMassRing,theHF.clus_seed);
   }
+
+  double sum_long=theHF.ringOf+theHF.ringCentral+theHF.ringForward;
+  double sum_short=theHF.ringOf_short+theHF.ringCentral_short+theHF.ringForward_short;
+
+  m_shortLongRatio.fill(sum_short/sum_long,theHF.clus_seed);
   
-  //if(70 < diElectronMassRing < 110){
-  m_diElectronMassRing.fill(diElectronMassRing,theHF.clus_seed);
-  //}
-  
-  //if(70 < InvariantMassZ < 110) {
   m_invariantMassZ.fill(InvariantMassZ,theHF.clus_seed);
-  //}
   
 }
 
@@ -206,16 +211,15 @@ void HFZCalibAnalysis::analyze(const pat::ElectronCollection& elecs) {
 void HFZCalibAnalysis::loadFromHF(const reco::RecoEcalCandidateCollection& theHFelecs,
 				  const reco::SuperClusterCollection& SuperCluster,
 				  const reco::HFEMClusterShapeAssociationCollection& AssocShape,
-				  const HFRecHitCollection& theHits){
+				  const HFRecHitCollection* theHits){
   m_calibs.clear();
   HFCalibData anItem;
   reco::RecoEcalCandidateCollection::const_iterator hf;
 
-  static const double minimum_ET_HF=12.0;
 
   for (hf=theHFelecs.begin(); hf!=theHFelecs.end(); hf++)
  {
-   if (hf->pt()<minimum_ET_HF) continue; // cut (very) low ET hits
+   if (hf->pt()<minimum_ET_HF_) continue; // cut (very) low ET hits
     anItem.clus_eta=hf->eta();
     anItem.clus_phi=hf->phi();
     anItem.ringOf=0;
@@ -236,62 +240,70 @@ void HFZCalibAnalysis::loadFromHF(const reco::RecoEcalCandidateCollection& theHF
 					      hf->py(),
 					      hf->pz(),
 					      hf->energy());
+
     
     SuperClusterRef theClusRef=hf->superCluster();
     const HFEMClusterShapeRef clusShapeRef=AssocShape.find(theClusRef)->val;
     const HFEMClusterShape& clusShape=*clusShapeRef;
     
     anItem.clus_seed=clusShape.seed();
-    HFRecHitCollection::const_iterator ahit; // actually putting the calibration constants by hand! but how do the affect base  case
-    static const float ietaEtas[] = {-5.054, -4.8165, -4.626, -4.4645, -4.2905, -4.1155, -3.94, -3.765, -3.59, -3.415, -3.2395, -3.064, -2.921, 2.921, 3.064, 3.2395, 3.415, 3.59, 3.765, 3.94, 4.1155, 4.2905, 4.4645, 4.626, 4.8165, 5.054};
 
-    for (int de=-1; de<=1; de++) {
-      for (int dp=-2; dp<=2; dp+=2) {
-	const int ieta=anItem.clus_seed.ieta()+(de*anItem.clus_seed.zside());
-	int iphi=anItem.clus_seed.iphi()+dp;
+    if (m_doHits && theHits!=0) {
 
-	if (iphi<1) iphi+=72;
-	if (iphi>72) iphi-=72;
-	// this doesn't handle towers 40,41 right!
-	HcalDetId target(HcalForward,ieta,iphi,1); // my target
-	ahit=theHits.find(target); // aiming...
-	if (ahit==theHits.end()) continue; // missed!
-	if (ahit->energy()<3.0) continue; // remove very low energy hits
-	if (de==-1) { // more central
-	  anItem.ringCentral+=ahit->energy();
-	  int index=(ieta<0)?(ieta+41):(ieta-16);
-	  anItem.ringCentral_t+=ahit->energy()/cosh(ietaEtas[index]);
-	} else if (de==0) {
-	  anItem.ringOf+=ahit->energy();
-	  int index=(ieta<0)?(ieta+41):(ieta-16);
-	  anItem.ringOf_t+=ahit->energy()/cosh(ietaEtas[index]);
-	} else {
-	  anItem.ringForward+=ahit->energy();
-	  int index=(ieta<0)?(ieta+41):(ieta-16);
-	  anItem.ringForward_t+=ahit->energy()/cosh(ietaEtas[index]);
+      HFRecHitCollection::const_iterator ahit; // actually putting the calibration constants by hand! but how do the affect base  case
+      static const float ietaEtas[] = {-5.054, -4.8165, -4.626, -4.4645, -4.2905, -4.1155, -3.94, -3.765, -3.59, -3.415, -3.2395, -3.064, -2.921, 2.921, 3.064, 3.2395, 3.415, 3.59, 3.765, 3.94, 4.1155, 4.2905, 4.4645, 4.626, 4.8165, 5.054};
+      
+      for (int de=-1; de<=1; de++) {
+	for (int dp=-2; dp<=2; dp+=2) {
+	  const int ieta=anItem.clus_seed.ieta()+(de*anItem.clus_seed.zside());
+	  int iphi=anItem.clus_seed.iphi()+dp;
+	  
+	  if (iphi<1) iphi+=72;
+	  if (iphi>72) iphi-=72;
+	  // this doesn't handle towers 40,41 right!
+	  HcalDetId target(HcalForward,ieta,iphi,1); // my target
+	  ahit=theHits->find(target); // aiming...
+	  if (ahit==theHits->end()) continue; // missed!
+	  if (ahit->energy()<3.0) continue; // remove very low energy hits
+	  if (de==-1) { // more central
+	    anItem.ringCentral+=ahit->energy();
+	    int index=(ieta<0)?(ieta+41):(ieta-16);
+	    anItem.ringCentral_t+=ahit->energy()/cosh(ietaEtas[index]);
+	  } else if (de==0) {
+	    anItem.ringOf+=ahit->energy();
+	    int index=(ieta<0)?(ieta+41):(ieta-16);
+	    anItem.ringOf_t+=ahit->energy()/cosh(ietaEtas[index]);
+	  } else {
+	    anItem.ringForward+=ahit->energy();
+	    int index=(ieta<0)?(ieta+41):(ieta-16);
+	    anItem.ringForward_t+=ahit->energy()/cosh(ietaEtas[index]);
+	}
 	}
       }
-    }
-    for (int de=-1; de<=1; de++) {
-      for (int dp=-2; dp<=2; dp+=2) {
-	const int ieta=anItem.clus_seed.ieta()+(de*anItem.clus_seed.zside());
-	int iphi=anItem.clus_seed.iphi()+dp;
-
-	if (iphi<1) iphi+=72;
-	if (iphi>72) iphi-=72;
-	// this doesn't handle towers 40,41 right!
-	HcalDetId target(HcalForward,ieta,iphi,2); // my target
-	ahit=theHits.find(target); // aiming...
-	if (ahit==theHits.end()) continue; // missed!
-	if (ahit->energy()<3.0) continue; // remove very low energy hits
-	if (de==-1) { // more central
-	  anItem.ringCentral_short+=ahit->energy();
-	} else if (de==0) {
-	  anItem.ringOf_short+=ahit->energy();
-	} else {
-	  anItem.ringForward_short+=ahit->energy();
+      for (int de=-1; de<=1; de++) {
+	for (int dp=-2; dp<=2; dp+=2) {
+	  const int ieta=anItem.clus_seed.ieta()+(de*anItem.clus_seed.zside());
+	  int iphi=anItem.clus_seed.iphi()+dp;
+	  
+	  if (iphi<1) iphi+=72;
+	  if (iphi>72) iphi-=72;
+	  // this doesn't handle towers 40,41 right!
+	  HcalDetId target(HcalForward,ieta,iphi,2); // my target
+	  ahit=theHits->find(target); // aiming...
+	  if (ahit==theHits->end()) continue; // missed!
+	  if (ahit->energy()<3.0) continue; // remove very low energy hits
+	  if (de==-1) { // more central
+	    anItem.ringCentral_short+=ahit->energy();
+	  } else if (de==0) {
+	    anItem.ringOf_short+=ahit->energy();
+	  } else {
+	    anItem.ringForward_short+=ahit->energy();
+	  }
 	}
       }
+    } else {
+      anItem.ringOf=clusShape.eLong3x3();
+      anItem.ringOf_short=clusShape.eShort3x3();
     }
 
     m_calibs.push_back(anItem); // copy into the list (last thing!)
