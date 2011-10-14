@@ -13,7 +13,7 @@
 //
 // Original Author:  Perrie Cole
 //         Created:  Wed Jun 17 15:21:36 CDT 2009
-// $Id: HFZCalib.cc,v 1.4 2011/08/02 19:36:49 mansj Exp $
+// $Id: HFZCalib.cc,v 1.5 2011/08/02 19:41:44 mansj Exp $
 //
 //
 
@@ -63,7 +63,8 @@ class HFZCalib : public edm::EDFilter {
   std::string selectedPatElectrons_;
   edm::InputTag hfRecoEcalCandidate_,hfClusterShapes_,hfHits_;
   int maxPU_;
-  bool doMC_;
+  bool doMC_, doHits_;
+  double minHFET_;
   int nvertexCut_;
 
       // ----------member data ---------------------------
@@ -88,6 +89,8 @@ HFZCalib::HFZCalib(const edm::ParameterSet& iConfig) :
   hfHits_(iConfig.getUntrackedParameter<edm::InputTag>("hfHits")),
   maxPU_(iConfig.getUntrackedParameter<int>("maxPU",-1)),
   doMC_(iConfig.getUntrackedParameter<bool>("doMC",false)),
+  doHits_(iConfig.getUntrackedParameter<bool>("doHits",false)),
+  minHFET_(iConfig.getUntrackedParameter<double>("minHFET",12.0)),
   nvertexCut_(iConfig.getUntrackedParameter<int>("nvertexCut",-1))
 {
    //now do what ever initialization is needed
@@ -121,11 +124,17 @@ void HFZCalib::loadFromHF(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByLabel(hfClusterShapes_,SuperClusters);
   Handle<reco::HFEMClusterShapeAssociationCollection> ClusterAssociation;
   iEvent.getByLabel(hfClusterShapes_,ClusterAssociation);
-  Handle<HFRecHitCollection> hits;
-  iEvent.getByLabel(hfHits_,hits);
+
+  const HFRecHitCollection* phits=0;
   
-  theAnalysis.loadFromHF(*HFElectrons,*SuperClusters,*ClusterAssociation,*hits);
-  //std::cout << "I've got " << HFElectrons->size() << " reco::Electrons!  How about you?\n" ;
+  if (doHits_) {
+
+    Handle<HFRecHitCollection> hits;
+    iEvent.getByLabel(hfHits_,hits);
+    phits=&(*hits);
+  }
+  
+  theAnalysis.loadFromHF(*HFElectrons,*SuperClusters,*ClusterAssociation,phits);
 
 }
 
@@ -204,7 +213,7 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 HFZCalib::beginJob()
 {
-  theAnalysis.setup(doMC_);
+  theAnalysis.setup(doMC_,doHits_,minHFET_);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
