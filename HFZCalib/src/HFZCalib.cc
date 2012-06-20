@@ -13,7 +13,7 @@
 //
 // Original Author:  Perrie Cole
 //         Created:  Wed Jun 17 15:21:36 CDT 2009
-// $Id: HFZCalib.cc,v 1.5 2011/08/02 19:41:44 mansj Exp $
+// $Id: HFZCalib.cc,v 1.6 2011/10/14 18:29:46 mansj Exp $
 //
 //
 
@@ -30,7 +30,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
-#include "Work/HFZCalib/interface/HFZCalibAnalysis.h"
+#include "HCALCalib/HFZCalib/interface/HFZCalibAnalysis.h"
 #include "CLHEP/Vector/LorentzVector.h"
 #include "DataFormats/EgammaReco/interface/HFEMClusterShapeAssociation.h"
 #include "DataFormats/EgammaReco/interface/HFEMClusterShape.h"

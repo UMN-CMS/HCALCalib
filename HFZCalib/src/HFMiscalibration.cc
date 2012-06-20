@@ -3,7 +3,7 @@
 #include "FWCore/ParameterSet/interface/FileInPath.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "Work/HFZCalib/interface/HFMiscalibration.h"
+#include "HCALCalib/HFZCalib/interface/HFMiscalibration.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include <iostream>
 #include <vector>
