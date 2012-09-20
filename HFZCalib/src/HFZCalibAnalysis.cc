@@ -81,7 +81,7 @@ static int NumOfZPassZCut=0; // Number of Z  that Pass the Z cut
 static int NumOfZ=0;       // Number of Z
 static int NumOfZOneECALOneHF=0; // Number of Z one in Ecal and one in HF
 
-void HFZCalibAnalysis::analyze(const pat::ElectronCollection& elecs) {
+void HFZCalibAnalysis::analyze(const reco::GsfElectronCollection& elecs) {
   
   bool reject=false;
   wasUseful_=false;
@@ -112,7 +112,7 @@ void HFZCalibAnalysis::analyze(const pat::ElectronCollection& elecs) {
   
   wasUseful_=true;
   
-  const pat::Electron& theECAL=elecs[0];
+  const reco::GsfElectron& theECAL=elecs[0];
   HFCalibData& theHF=m_calibs[0];
   
   if(elecs.size() != 0 || m_calibs.size() != 0){
