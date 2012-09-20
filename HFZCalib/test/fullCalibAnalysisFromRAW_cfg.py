@@ -59,20 +59,9 @@ process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
-    eventsToProcess = cms.untracked.VEventRange(),
+    # eventsToProcess = cms.untracked.VEventRange(),
     fileNames = cms.untracked.vstring( 'file:input.root' )
 )
-process.source.eventsToProcess.extend([
-'191226:864:1158913821-191226:864:1158913821',
-'191226:866:1161616410-191226:866:1161616410',
-'191226:866:1161233536-191226:866:1161233536',
-'191226:866:1161308200-191226:866:1161308200',
-'191226:868:1163352130-191226:868:1163352130',
-'191226:868:1164035205-191226:868:1164035205',
-'191226:869:1165040197-191226:869:1165040197',
-'191226:869:1164727492-191226:869:1164727492',
-'191226:872:1168041287-191226:872:1168041287'
-])
 
 process.out = cms.OutputModule( "PoolOutputModule",
     fileName = cms.untracked.string("output.root"),
