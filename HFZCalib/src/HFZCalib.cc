@@ -13,7 +13,7 @@
 //
 // Original Author:  Perrie Cole
 //         Created:  Wed Jun 17 15:21:36 CDT 2009
-// $Id: HFZCalib.cc,v 1.6 2011/10/14 18:29:46 mansj Exp $
+// $Id: HFZCalib.cc,v 1.7 2012/06/20 20:14:30 bdahmes Exp $
 //
 //
 
@@ -29,7 +29,8 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
 #include "HCALCalib/HFZCalib/interface/HFZCalibAnalysis.h"
 #include "CLHEP/Vector/LorentzVector.h"
 #include "DataFormats/EgammaReco/interface/HFEMClusterShapeAssociation.h"
@@ -49,18 +50,17 @@
 
 //   HFZCalib is my Filter
 class HFZCalib : public edm::EDFilter {
-   public:
-      explicit HFZCalib(const edm::ParameterSet&);
-      ~HFZCalib();
+public:
+  explicit HFZCalib(const edm::ParameterSet&);
+  ~HFZCalib();
 
-
-   private:
-      virtual void beginJob() ;
+private:
+  virtual void beginJob() ;
   virtual bool filter(edm::Event&, const edm::EventSetup&);
-      virtual void loadFromHF(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
-
-  std::string selectedPatElectrons_;
+  virtual void loadFromHF(const edm::Event&, const edm::EventSetup&);
+  virtual void endJob() ;
+  
+  std::string selectedElectrons_;
   edm::InputTag hfRecoEcalCandidate_,hfClusterShapes_,hfHits_;
   int maxPU_;
   bool doMC_, doHits_;
@@ -83,7 +83,7 @@ class HFZCalib : public edm::EDFilter {
 // constructors and destructor
 //
 HFZCalib::HFZCalib(const edm::ParameterSet& iConfig) :
-  selectedPatElectrons_(iConfig.getUntrackedParameter<std::string>("selectedPatElectrons")),
+  selectedElectrons_(iConfig.getUntrackedParameter<std::string>("selectedElectrons")),
   hfRecoEcalCandidate_(iConfig.getUntrackedParameter<edm::InputTag>("hfRecoEcalCandidate")),
   hfClusterShapes_(iConfig.getUntrackedParameter<edm::InputTag>("hfClusterShapes")),
   hfHits_(iConfig.getUntrackedParameter<edm::InputTag>("hfHits")),
@@ -143,11 +143,9 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
 
-   Handle<pat::ElectronCollection> patElectrons;
-   iEvent.getByLabel(selectedPatElectrons_,patElectrons);
+   edm::Handle<reco::GsfElectronCollection> gsfElectrons;
+   iEvent.getByLabel(selectedElectrons_,gsfElectrons);
    
-   // std::cout << "I've got " << patElectrons->size() << " pat::Electrons!  How about you?\n";  
-
    loadFromHF(iEvent,iSetup);
 
    bool okPU=true;
@@ -201,7 +199,7 @@ HFZCalib::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
 
-   theAnalysis.analyze(*patElectrons);
+   theAnalysis.analyze(*gsfElectrons);
 
 
    return theAnalysis.eventWasUseful();
