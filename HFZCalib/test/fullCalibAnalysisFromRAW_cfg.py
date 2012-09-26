@@ -114,11 +114,11 @@ process.hltPickTriggered = cms.EDFilter('TriggerResultsFilter',
 process.triggerFilterSequence = cms.Sequence(process.hltPickTriggered)
 
 ###--- (2) N(vertex) Skim ---###
-process.mcVtxFilter = cms.EDFilter('SimpleNVertexFilter',
+process.vtxFilter = cms.EDFilter('SimpleNVertexFilter',
     minNvtx = cms.int32(vtxMin),
     maxNvtx = cms.int32(vtxMax)
 )
-process.mcVertexFilterSequence = cms.Sequence(process.mcVtxFilter)
+process.vertexFilterSequence = cms.Sequence(process.vtxFilter)
 
 ###--- (3) Re-RECO from RAW ---###
 ### Auto generated configuration file using Revision: 1.381.2.6 
@@ -202,10 +202,12 @@ process.calibPreSequence = cms.Sequence(process.boolTrue)
 
 if triggerFilter:
     process.calibPreSequence += process.triggerFilterSequence
-if nvertexFilter:
-    process.calibPreSequence += process.mcVertexFilterSequence
+if nvertexFilter and not isData:
+    process.calibPreSequence += process.vertexFilterSequence
 if doRerecoOnRaw:
     process.calibPreSequence += process.reconstructionFromRawSequence
+if nvertexFilter and isData:
+    process.calibPreSequence += process.vertexFilterSequence    
 if zFilterEcalHF:
     process.calibPreSequence += process.zCalibFilterSequence
 
