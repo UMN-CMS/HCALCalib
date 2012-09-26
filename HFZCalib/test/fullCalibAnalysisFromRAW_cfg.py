@@ -4,25 +4,52 @@ process = cms.Process("HFCALIB")
 
 #--- Steps available to this configuration       ---#
 #--- (1) Trigger filter.  Input data RAW/AOD     ---#
-#--- (2) Reconstruction, assuming RAW input data ---#
-#--- (3) Filtering on ECAL+HF, Z mass            ---#
-#--- (4) HF Calibration analysis                 ---#
+#--- (2) N(vertex) filter.  Only valid for MC    ---#
+#--- (3) Reconstruction, assuming RAW input data ---#
+#--- (4) Filtering on ECAL+HF, Z mass            ---#
+#--- (5) HF Calibration analysis                 ---#
 triggerFilter = True
+nvertexFilter = True
 doRerecoOnRaw = True
 zFilterEcalHF = True
 calibAnalysis = True
 
-#--- Testing flag ---#
-testing = True
+#--- Testing flag: Do not enable unless needed! ---#
+testing = False
 
 #--- Flag for running on data/MC ---#
 isData = True
+#--- If running on MC, and nvertexFilter is True, then set the ---#
+#--- inclusive range of vertices considered: [vtxMin,vtxMax]   ---#
+vtxMin = 0 
+vtxMax = 3
 
 #--- Flag for keeping the skim results ---#
-keepSkimEvents = True
+keepSkimEvents = False
 
 #--- Implement specific conditions not in the Global Tag ---#
 hfPhiSymCorrections = True
+
+#--- Consistency checks
+if isData: 
+    if nvertexFilter:
+        print "WARNING: Running on data but selecting subset of vertices."  
+        print "FIX:     Histogram produced but setting vtxMax < 0."
+        vtxMin = 0 
+        vtxMax = -1 
+else:
+    if keepSkimEvents:
+        print "WARNING: Running on MC but saving skimmed events.  FIX: Disabling keepSkimEvents."
+        keepSkimEvents = False
+    if triggerFilter:
+        print "WARNING: Running on MC but using trigger filtering.  FIX: Disabling triggerFilter."
+        triggerFilter = False
+    if doRerecoOnRaw:
+        print "WARNING: Running on MC but trying to re-reco.  FIX: Disabling doRerecoOnRaw."
+        doRerecoOnRaw = False
+    if hfPhiSymCorrections:
+        print "WARNING: Running on MC but using new conditions.  FIX: Disabling hfPhiSymCorrections."
+        hfPhiSymCorrections = False    
 
 ## Import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -32,28 +59,28 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load("RecoEgamma.EgammaHFProducers.hfEMClusteringSequence_cff")
-if isData:
+if isData and doRerecoOnRaw:
     process.load('Configuration.StandardSequences.MagneticField_AutoFromDBCurrent_cff')
     process.load('Configuration.StandardSequences.RawToDigi_Data_cff')
     process.load('Configuration.StandardSequences.L1Reco_cff')
     process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
-else:
-    process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-    process.load('Configuration.StandardSequences.MagneticField_38T_cff')
-    process.load('Configuration.StandardSequences.RawToDigi_cff')
-    process.load('Configuration.StandardSequences.Reconstruction_cff')
+# Not needed as MC from RECO, not RAW
+# else:
+#     process.load('SimGeneral.MixingModule.mixNoPU_cfi')
+#     process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+#     process.load('Configuration.StandardSequences.RawToDigi_cff')
+#     process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 ## Global tags:
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 if isData:
     if doRerecoOnRaw:
-        # process.GlobalTag.globaltag = cms.string('GR_R_53_V2::All')
         process.GlobalTag.globaltag = cms.string('FT_R_53_V6::All')
-        # process.GlobalTag.globaltag = cms.string('FT_R_53_V10::All')
     else:
         process.GlobalTag.globaltag = cms.string('GR_P_V41_AN2::All')
 else:
-    process.GlobalTag.globaltag = cms.string('UNKNOWN::All')
+    # Note that this assumes the 53X Monte Carlo
+    process.GlobalTag.globaltag = cms.string('START53_V7A::All')
 
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
@@ -86,7 +113,14 @@ process.hltPickTriggered = cms.EDFilter('TriggerResultsFilter',
 )
 process.triggerFilterSequence = cms.Sequence(process.hltPickTriggered)
 
-###--- (2) Re-RECO from RAW ---###
+###--- (2) N(vertex) Skim ---###
+process.mcVtxFilter = cms.EDFilter('SimpleNVertexFilter',
+    minNvtx = cms.int32(vtxMin),
+    maxNvtx = cms.int32(vtxMax)
+)
+process.mcVertexFilterSequence = cms.Sequence(process.mcVtxFilter)
+
+###--- (3) Re-RECO from RAW ---###
 ### Auto generated configuration file using Revision: 1.381.2.6 
 ### Source: /local/reps/CMSSW/CMSSW/Configuration/PyReleaseValidation/python/ConfigBuilder.py,v 
 ### with command line options: -s RAW2DIGI,RECO ...
@@ -114,7 +148,7 @@ if hfPhiSymCorrections:
 if doRerecoOnRaw:
     process.reconstructionFromRawSequence = cms.Sequence(process.RawToDigi * process.L1Reco * process.reconstruction)
 
-###--- (3) Require Z->ee, ECAL+HF ---###
+###--- (4) Require Z->ee, ECAL+HF ---###
 if zFilterEcalHF:
     process.load('RecoJets.JetProducers.kt4PFJets_cfi') # For isolation calculation
     process.kt6PFJetsForZeeCalib = process.kt4PFJets.clone(
@@ -146,7 +180,7 @@ if zFilterEcalHF:
     process.calibInit = cms.Sequence( process.getElectronIDs * process.hfRecoEcalCandidate ) 
     process.zCalibFilterSequence = cms.Sequence( process.calibInit * process.hfzeeForCalib ) 
 
-###--- (4) HF Calibration Analysis ---###
+###--- (5) HF Calibration Analysis ---###
 if calibAnalysis:
     import HCALCalib.HFZCalib.hfzcalib_cfi
     process.calib = HCALCalib.HFZCalib.hfzcalib_cfi.hfzcalib.clone(
@@ -168,6 +202,8 @@ process.calibPreSequence = cms.Sequence(process.boolTrue)
 
 if triggerFilter:
     process.calibPreSequence += process.triggerFilterSequence
+if nvertexFilter:
+    process.calibPreSequence += process.mcVertexFilterSequence
 if doRerecoOnRaw:
     process.calibPreSequence += process.reconstructionFromRawSequence
 if zFilterEcalHF:
