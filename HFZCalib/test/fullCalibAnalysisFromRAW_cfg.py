@@ -38,7 +38,7 @@ testing = False
 #-----------------------------------#
 #--- Flag for running on data/MC ---#
 #-----------------------------------#
-isData = True
+isData = False
 
 #--- If running on MC, and nvertexFilter is True, then set the ---#
 #--- inclusive range of vertices considered: [vtxMin,vtxMax]   ---#
@@ -272,6 +272,8 @@ if calibAnalysis:
     process.TFileService = cms.Service("TFileService",
         fileName = cms.string('HFZCalib_from_data.root')
     )
+    if not isData:
+        process.TFileService.fileName = cms.string('HFZCalib_from_MC.root')
 
 ###--- Debugging ---###
 if testing:
