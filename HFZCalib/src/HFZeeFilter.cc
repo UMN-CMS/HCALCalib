@@ -13,7 +13,7 @@
 //
 // Original Author:  Jeremy M Mans
 //         Created:  Mon May 31 07:00:26 CDT 2010
-// $Id: HFZeeFilter.cc,v 1.25 2012/02/06 19:42:33 mansj Exp $
+// $Id: HFZeeFilter.cc,v 1.1 2012/09/20 09:19:44 bdahmes Exp $
 //
 //
 
@@ -95,7 +95,8 @@ private:
     TH1* hf_eta,       *hf_phi,     *hf_pt;
     TH1* hfp_eta,      *hfp_phi,    *hfp_pt;
     TH1* hfm_eta,      *hfm_phi,    *hfm_pt;
-    TH2* ec_eta_vs_phi, *hfp_eta_vs_phi, *hfm_eta_vs_phi ; 
+    TH2* ec_eta_vs_phi, *hfp_eta_vs_phi, *hfm_eta_vs_phi ;
+    TH2* hf_eCOREe9eSeL;
     TH1* hf_e9e25,     *hf_eCOREe9, *hf_eSeL, *hf_var2d;
     TH1* hf_seed_eSeL, *hf_e1e9;
     TH1* hf_e,         *hf_e1x1,    *hf_core, *hf_e3x3, *hf_e5x5;
@@ -188,13 +189,16 @@ void HFZeeFilter::HistPerDef::book(TFileDirectory td, const std::string& post, c
   hfm_pt=td.make<TH1D>("pthfm",title.c_str(),120,0,120);  
 
   title=std::string("iso e9e25 ")+post;
-  hf_e9e25=td.make<TH1D>("e9e25",title.c_str(),60,0.5,1.2);
+  hf_e9e25=td.make<TH1D>("e9e25",title.c_str(),60,0.5,1.1);
   title=std::string("eldId var2d")+post;
   hf_var2d=td.make<TH1D>("var2d",title.c_str(),75,0,1.5);  
   title=std::string("eCOREe9 ")+post;
   hf_eCOREe9=td.make<TH1D>("eCOREe9",title.c_str(),60,0,1.2);  
   title=std::string("eSeL ")+post;
   hf_eSeL=td.make<TH1D>("eSeL",title.c_str(),75,0,1.5);  
+
+  title=std::string("eCOREe9eSeL ")+post;
+  hf_eCOREe9eSeL=td.make<TH2D>("eCOREe9eSeL",title.c_str(),60,0,1.2,75,0,1.5);  
 
   title=std::string("seed_eSeL ")+post;
   hf_seed_eSeL=td.make<TH1D>("seed_eSeL",title.c_str(),75,0,1.5);  
@@ -373,6 +377,8 @@ void HFZeeFilter::HistPerDef::fill(reco::GsfElectronCollection::const_iterator e
       hf_eCOREe9->Fill(hfshape.eCOREe9());
       hf_eSeL   ->Fill(hfshape.eSeL());
     
+      hf_eCOREe9eSeL->Fill(hfshape.eCOREe9(),hfshape.eSeL());
+
       hf_seed_eSeL->Fill(hfshape.eShort1x1()/hfshape.eLong1x1());
       hf_e1e9     ->Fill(hfshape.eLong1x1()/hfshape.eLong3x3());
       hf_e        ->Fill(hfshape.eLong3x3()); // GF: check this with Kevin
@@ -619,8 +625,6 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   bool filterOk=false;
   bool baseMinPt = false ; 
 
-  // if ( dolog_ ) std::cout << "Beginning processing: " << iEvent.id() << std::endl ; 
-
   edm::Handle<reco::RecoEcalCandidateCollection> HFElectrons;
   edm::Handle<reco::SuperClusterCollection> SuperClusters;
   edm::Handle<reco::HFEMClusterShapeAssociationCollection> ClusterAssociation;
@@ -635,6 +639,10 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     std::cout << "No electrons found in this event with tag " << gsfElectrons_ << std::endl;
     return false; // RETURN if no elecs in the event
   }
+
+  // if ( dolog_ ) { 
+  //   std::cout << "Sizes: " << gsfElectronCollection->size() << ", " << HFElectrons->size() << std::endl ; 
+  // }
 
   edm::Handle<edm::ValueMap<float> > eIDValueMap ; 
   iEvent.getByLabel(electronIDLabel_, eIDValueMap); 
@@ -655,8 +663,9 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     double electronID = eIDmap[electronRef] ; 
     // if ( dolog_ ) std::cout << "Processing electron " << i+1 << " of " 
-    // 			    << gsfElectronCollection->size() << " with pT " 
-    // 			    << electronRef->pt() << std::endl ; 
+    //  			    << gsfElectronCollection->size() << " with pT " 
+    //  			    << electronRef->pt() << " and ID value "
+    // 			    << electronID << std::endl ; 
 
     reco::SuperClusterRef scr=electronRef->superCluster();
     if ( scr.isNull() ) {
@@ -667,9 +676,9 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     // if ( dolog_ ) { // Debugging
     //   if ( HFElectrons->size() > 0 && electronRef->pt() > ecalMinEt_ ) {
-    // 	std::cout << iEvent.id() << std::endl ;
-    // 	std::cout << "Electron with pT " << electronRef->pt() << " GeV has ID value " << electronID << std::endl ; 
-    //   }
+    //  	std::cout << iEvent.id() << std::endl ;
+    //  	std::cout << "Electron with pT " << electronRef->pt() << " GeV has ID value " << electronID << std::endl ; 
+    //    }
     // }
 
     // Explanation of electronID value: https://twiki.cern.ch/twiki/bin/view/CMS/SimpleCutBasedEleID
@@ -700,7 +709,7 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     const reco::HFEMClusterShape&   hfshape        = *hfclusShapeRef;
 
     // if (dolog_) std::cout << "HF candidate index " << hfEleWithMaxPt << " of " << HFElectrons->size()
-    // 			  << " with pT " << hfE.pt() << std::endl ; 
+    //  			  << " with pT " << hfE.pt() << std::endl ; 
 
     baseMinPt = (hfE.pt() > hfMinEt_) && 
       ((ecalE!=gsfElectronCollection->end())?(ecalE->pt()>ecalMinEt_):(gsfElectronCollection->begin()->pt()>ecalMinEt_)) ;
@@ -723,7 +732,7 @@ HFZeeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
       Z += hfE.p4();
 
       // if (dolog_) std::cout << "ECAL with pT " << ecalE->pt() << " and HF with pT " << hfE.pt()
-      // 			    << " combines to a Z candidate with mass " << Z.M() << std::endl ; 
+      //  			    << " combines to a Z candidate with mass " << Z.M() << std::endl ; 
 
       if (ecalE->pt()>ecalMinEt_ && hfE.pt()>hfMinEt_) {
 	// if (dolog_) std::cout << "I pass the filter!!!" << std::endl ; 
